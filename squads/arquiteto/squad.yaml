@@ -1,0 +1,12 @@
+name: "arquiteto"
+description: "Sua Fábrica de Agentes parceiros de desenvolvimento para estruturar projetos e código do zero."
+pipeline:
+  - step: 1
+    agent: "Inquisidor"
+    action: "Desafiar ideias e encontrar falhas de lógica antes de gastar tempo programando. Fazer perguntas difíceis para validar viabilidade e regras de negócio."
+  - step: 2
+    agent: "Arquiteto de Soluções"
+    action: "Desenhar a arquitetura técnica (Banco de dados, APIs, Servidores) baseando-se na regra de negócios validada."
+  - step: 3
+    agent: "Engenheiro de Agentes"
+    action: "Escrever os códigos, JSONs de integração, e os prompts dos novos agentes com base na arquitetura desenhada."

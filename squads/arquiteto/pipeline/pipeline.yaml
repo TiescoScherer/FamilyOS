@@ -1,0 +1,12 @@
+name: "arquiteto"
+description: "Sua Fábrica de Agentes parceiros de desenvolvimento para estruturar projetos e código do zero."
+steps:
+  - id: 1-inquisicao
+    agent: "Inquisidor"
+    label: "Inquisição Estratégica"
+  - id: 2-arquitetura
+    agent: "Arquiteto de Soluções"
+    label: "Arquitetura Técnica"
+  - id: 3-engenharia
+    agent: "Engenheiro de Agentes"
+    label: "Engenharia de Artefatos"
