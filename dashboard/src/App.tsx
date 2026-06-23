@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useNavStore } from "@/store/useNavStore";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { FamilyDashboard } from "@/components/family/FamilyDashboard";
 import { FamilyPage } from "@/pages/FamilyPage";
@@ -36,6 +37,7 @@ function PageContent() {
 export function App() {
   const loadFamily = useFamilyStore((s) => s.loadAll);
   const loadFinancial = useFinancialStore((s) => s.loadAll);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     loadFamily();
@@ -43,12 +45,18 @@ export function App() {
   }, [loadFamily, loadFinancial]);
 
   return (
-    <div style={{ display: "flex", height: "100%", width: "100%", overflow: "hidden" }}>
-      <Sidebar />
-      <main style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", height: "100%", width: "100%", overflow: "hidden" }}>
+      {!isMobile && <Sidebar />}
+      <main style={{
+        flex: 1,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        paddingBottom: isMobile ? 64 : 0,
+      }}>
         <PageContent />
       </main>
+      {isMobile && <Sidebar />}
     </div>
   );
 }
-

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 interface Evento {
   id: string;
@@ -29,6 +30,7 @@ export function CalendarPage() {
   const hoje = new Date();
   const [ano, setAno] = useState(hoje.getFullYear());
   const [mes, setMes] = useState(hoje.getMonth());
+  const isMobile = useIsMobile();
   const [eventos, setEventos] = useState<Evento[]>(EVENTOS_MOCK);
   const [diaSelecionado, setDiaSelecionado] = useState<number | null>(hoje.getDate());
   const [modalAdd, setModalAdd] = useState(false);
@@ -68,8 +70,8 @@ export function CalendarPage() {
   const eventosDiaSelecionado = diaSelecionado ? eventosPorDia(diaSelecionado) : [];
 
   return (
-    <div style={sc.page}>
-      <div style={sc.pageHeader}>
+    <div style={{ ...sc.page, padding: isMobile ? "16px" : "28px 32px" }}>
+      <div style={{ ...sc.pageHeader, flexDirection: isMobile ? "column" : "row", gap: isMobile ? 12 : 0 }}>
         <div>
           <h1 style={sc.pageTitle}>Calendário</h1>
           <p style={sc.pageDesc}>Compromissos, vencimentos e eventos da família</p>
@@ -81,7 +83,7 @@ export function CalendarPage() {
         )}
       </div>
 
-      <div style={sc.layout}>
+      <div style={{ ...sc.layout, gridTemplateColumns: isMobile ? "1fr" : "1fr 280px" }}>
         {/* Calendário */}
         <div style={sc.calCard}>
           <div style={sc.calHeader}>

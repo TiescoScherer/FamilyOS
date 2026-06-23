@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useFamilyStore } from "@/store/useFamilyStore";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 interface MedHoje { nome: string; hora: string; dosagem: string; }
 interface Vacina  { nome: string; data: string; }
@@ -371,6 +372,7 @@ export function FamilyPage() {
   const medications = useFamilyStore((s) => s.medications);
   const updateMember = useFamilyStore((s) => s.updateMember);
   const [editing, setEditing] = useState<Member | null>(null);
+  const isMobile = useIsMobile();
 
   // Mapear os membros do Supabase para o formato local Member
   const members: Member[] = storeMembers.map((m: any) => {
@@ -425,7 +427,7 @@ export function FamilyPage() {
   });
 
   return (
-    <div style={pg.page}>
+    <div style={{ ...pg.page, padding: isMobile ? "16px" : "28px 32px" }}>
       <div style={pg.header}>
         <div>
           <h1 style={pg.title}>Família</h1>

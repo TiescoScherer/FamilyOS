@@ -3,6 +3,7 @@ import { useFinancialStore } from "@/store/useFinancialStore";
 import { CreditCards } from "@/components/financial/CreditCards";
 import { BudgetTracker } from "@/components/financial/BudgetTracker";
 import { SmartInput } from "@/components/financial/SmartInput";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import type { ContaFixa } from "@/types/financial";
 
 type Aba = "visao-geral" | "cartoes" | "orcamento" | "transacoes" | "contas-fixas";
@@ -147,6 +148,7 @@ export function FinancialPage() {
   const [modalConta, setModalConta] = useState(false);
   const [mesSelecionado, setMesSelecionado] = useState(() => new Date().toISOString().slice(0, 7));
   const { transacoes, contasFixas, removeTransacao, toggleContaFixa, removeContaFixa, cartoes, confirmarTransacao } = useFinancialStore();
+  const isMobile = useIsMobile();
 
   const mes = mesSelecionado;
   const receitas = transacoes.filter(t => t.tipo === "receita" && t.data.startsWith(mes)).reduce((s, t) => s + t.valor, 0);
@@ -167,9 +169,9 @@ export function FinancialPage() {
   const totalCartoes = cartoes.reduce((s, c) => s + c.gastoMes, 0);
 
   return (
-    <div style={fp.page}>
+    <div style={{ ...fp.page, padding: isMobile ? "16px" : "28px 32px" }}>
       {/* Header */}
-      <div style={fp.pageHeader}>
+      <div style={{ ...fp.pageHeader, flexDirection: isMobile ? "column" : "row", gap: isMobile ? 12 : 0 }}>
         <div>
           <h1 style={fp.pageTitle}>Financeiro</h1>
           <p style={fp.pageDesc}>Controle completo das finanças da família</p>
@@ -196,7 +198,7 @@ export function FinancialPage() {
       </div>
 
       {/* KPIs rápidos */}
-      <div style={fp.kpis}>
+      <div style={{ ...fp.kpis, gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(5, 1fr)" }}>
         {[
           { label: "Receitas", value: receitas, color: "#22C55E", icon: "💰" },
           { label: "Despesas", value: despesas, color: "#EF4444", icon: "💸" },
@@ -220,7 +222,7 @@ export function FinancialPage() {
       </div>
 
       {/* Abas */}
-      <div style={fp.tabs}>
+      <div style={{ ...fp.tabs, overflowX: "auto", flexShrink: 0 }}>
         {ABAS.map(a => (
           <button key={a.id} onClick={() => setAba(a.id)} style={{
             ...fp.tab,
@@ -235,7 +237,7 @@ export function FinancialPage() {
       {/* Conteúdo */}
       <div>
         {aba === "visao-geral" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
             <BudgetTracker />
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <p style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>Últimas transações</p>

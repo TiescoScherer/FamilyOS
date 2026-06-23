@@ -1,4 +1,5 @@
 import { useNavStore, type Page } from "@/store/useNavStore";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 interface NavItem {
   id: Page;
@@ -13,16 +14,42 @@ const NAV: NavItem[] = [
   { id: "financeiro", label: "Financeiro",      icon: "💳" },
   { id: "calendario", label: "Calendário",      icon: "📅" },
   { id: "saude",      label: "Saúde",           icon: "💊" },
-  { id: "compras",    label: "Lista de Compras",icon: "🛒" },
+  { id: "compras",    label: "Compras",         icon: "🛒" },
   { id: "metas",      label: "Metas",           icon: "🎯" },
 ];
 
 export function Sidebar() {
   const { page, go } = useNavStore();
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <nav style={s.bottomNav}>
+        {NAV.map((item) => {
+          const active = page === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => go(item.id)}
+              style={{
+                ...s.bottomItem,
+                color: active ? "var(--accent)" : "var(--text-muted)",
+              }}
+            >
+              <span style={{ fontSize: 20 }}>{item.icon}</span>
+              <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, marginTop: 2 }}>
+                {item.label}
+              </span>
+              {active && <div style={s.bottomDot} />}
+            </button>
+          );
+        })}
+      </nav>
+    );
+  }
 
   return (
     <aside style={s.sidebar}>
-      {/* Logo */}
       <div style={s.logo}>
         <div style={s.logoIcon}>F</div>
         <div>
@@ -33,7 +60,6 @@ export function Sidebar() {
 
       <div style={s.divider} />
 
-      {/* Nav items */}
       <nav style={s.nav}>
         {NAV.map((item) => {
           const active = page === item.id;
@@ -58,7 +84,6 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Footer */}
       <div style={s.footer}>
         <div style={s.footerDot} />
         <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Conectado</span>
@@ -68,6 +93,7 @@ export function Sidebar() {
 }
 
 const s: Record<string, React.CSSProperties> = {
+  // ── Desktop sidebar ──────────────────────────────────────
   sidebar: {
     width: "var(--sidebar-w)",
     minWidth: "var(--sidebar-w)",
@@ -140,5 +166,42 @@ const s: Record<string, React.CSSProperties> = {
     borderRadius: "50%",
     background: "var(--green)",
     boxShadow: "0 0 6px var(--green)",
+  },
+
+  // ── Mobile bottom nav ────────────────────────────────────
+  bottomNav: {
+    position: "fixed",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 64,
+    background: "var(--bg-sidebar)",
+    borderTop: "1px solid var(--border)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-around",
+    zIndex: 100,
+    paddingBottom: "env(safe-area-inset-bottom)",
+  },
+  bottomItem: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+    height: "100%",
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    position: "relative",
+    gap: 1,
+  },
+  bottomDot: {
+    position: "absolute",
+    top: 6,
+    width: 4,
+    height: 4,
+    borderRadius: "50%",
+    background: "var(--accent)",
   },
 };
