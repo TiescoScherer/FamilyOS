@@ -40,17 +40,7 @@ interface Member {
   telEscola: string;
 }
 
-const EMPTY_MEMBER = (overrides: Partial<Member>): Member => ({
-  id: "", nome: "", role: "filho", dataNascimento: "", emoji: "👤", cor: "#6C63FF",
-  tipoSanguineo: "", alergias: [], peso: "", altura: "", ultimaConsulta: "", cirurgias: "",
-  cpf: "", rg: "", certidao: "",
-  convenio: "", carteirinha: "",
-  contatoEmergencia: "", contatoTelefone: "",
-  pediatra: "", pediatraTel: "", proximaVacina: { nome: "", data: "" },
-  medicamentosHoje: [],
-  escola: "", serie: "", professora: "", horarioEscola: "", telEscola: "",
-  ...overrides,
-});
+
 
 
 
