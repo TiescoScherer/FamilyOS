@@ -146,7 +146,8 @@ export async function fetchFinancials(): Promise<Transacao[]> {
     categoria: r.categoria,
     data: r.data,
     membro: r.family_members?.nome || "Família",
-    origem: "manual"
+    origem: r.origem || "manual",
+    confirmada: r.confirmada !== false
   }));
 }
 
@@ -160,13 +161,24 @@ export async function addFinancial(t: Omit<Transacao, "id">) {
       valor: t.valor,
       categoria: t.categoria,
       data: t.data,
-      member_id: memberId
+      member_id: memberId,
+      origem: t.origem || "manual",
+      confirmada: t.confirmada !== false
     })
     .select()
     .single();
 
   if (error) console.error("Erro ao salvar transação:", error);
   return data;
+}
+
+export async function confirmarTransacao(id: string) {
+  const { error } = await supabase
+    .from("financial_records")
+    .update({ confirmada: true })
+    .eq("id", id);
+
+  if (error) console.error("Erro ao confirmar transação:", error);
 }
 
 export async function deleteFinancial(id: string) {

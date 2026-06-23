@@ -29,6 +29,7 @@ export interface Transacao {
   membro?: string;
   cartaoId?: string;
   origem: "manual" | "audio" | "foto" | "importacao";
+  confirmada?: boolean;
 }
 
 export interface ContaFixa {

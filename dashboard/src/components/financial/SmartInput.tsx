@@ -150,8 +150,9 @@ function FotoUpload({ onDados }: { onDados: (d: Partial<Transacao>) => void }) {
 // ── Componente principal ──────────────────────────────────
 export function SmartInput() {
   const { addTransacao, cartoes } = useFinancialStore();
-  const [aberto, setAberto] = useState(false);
   const [processando, setProcessando] = useState(false);
+  const [mostrarFormManual, setMostrarFormManual] = useState(false);
+  const [mecanismoOrigem, setMecanismoOrigem] = useState<"manual" | "audio" | "foto">("manual");
   const [form, setForm] = useState<Partial<Transacao>>({
     tipo: "despesa", descricao: "", valor: 0, categoria: "Alimentação",
     data: new Date().toISOString().slice(0, 10), membro: "Maiara", origem: "manual",
@@ -164,12 +165,40 @@ export function SmartInput() {
     if (!textoLivre.trim()) return;
     setProcessando(true);
     const dados = await interpretarTexto(textoLivre);
-    if (dados) setForm(p => ({ ...p, ...dados, origem: "audio" }));
+    if (dados) {
+      // Cria a transação diretamente no Supabase com confirmada = false!
+      await addTransacao({
+        tipo: dados.tipo || "despesa",
+        descricao: dados.descricao || textoLivre,
+        valor: dados.valor || 0,
+        categoria: dados.categoria || "Outros",
+        data: dados.data || new Date().toISOString().slice(0, 10),
+        membro: dados.membro || "Família",
+        cartaoId: dados.cartaoId,
+        origem: mecanismoOrigem,
+        confirmada: false
+      });
+      setTextoLivre("");
+      setMecanismoOrigem("manual");
+    } else {
+      alert("Não foi possível interpretar. Digite novamente ou use o formulário manual.");
+    }
     setProcessando(false);
   };
 
-  const preencherComDados = (dados: Partial<Transacao>) => {
-    setForm(p => ({ ...p, ...dados }));
+  const handleFotoDados = async (dados: Partial<Transacao>) => {
+    // Insere a transação da foto diretamente no Supabase como não-confirmada!
+    await addTransacao({
+      tipo: dados.tipo || "despesa",
+      descricao: dados.descricao || "Comprovante por foto",
+      valor: dados.valor || 0,
+      categoria: dados.categoria || "Outros",
+      data: dados.data || new Date().toISOString().slice(0, 10),
+      membro: dados.membro || "Família",
+      cartaoId: dados.cartaoId,
+      origem: "foto",
+      confirmada: false
+    });
   };
 
   const salvar = () => {
@@ -182,28 +211,33 @@ export function SmartInput() {
       data: form.data ?? new Date().toISOString().slice(0, 10),
       membro: form.membro,
       cartaoId: form.cartaoId,
-      origem: form.origem ?? "manual",
+      origem: "manual",
+      confirmada: true // Manual sempre entra confirmado
     });
-    setAberto(false);
+    setMostrarFormManual(false);
     setForm({ tipo: "despesa", descricao: "", valor: 0, categoria: "Alimentação", data: new Date().toISOString().slice(0, 10), membro: "Maiara", origem: "manual" });
-    setTextoLivre("");
   };
-
-  if (!aberto) {
-    return (
-      <div style={si.bar}>
-        <button onClick={() => setAberto(true)} style={si.mainBtn}>
-          + Nova Transação
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div style={si.panel} className="fade-in">
       <div style={si.panelHeader}>
-        <p style={si.panelTitle}>Nova Transação</p>
-        <button onClick={() => setAberto(false)} style={si.closeBtn}>✕</button>
+        <p style={si.panelTitle}>🎙️ Lançamento Rápido</p>
+        <button 
+          onClick={() => setMostrarFormManual(!mostrarFormManual)} 
+          style={{
+            background: "none",
+            border: "none",
+            color: "var(--accent)",
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 4
+          }}
+        >
+          {mostrarFormManual ? "✕ Ocultar Campos" : "✏️ Abrir Campos Manuais"}
+        </button>
       </div>
 
       {/* Input de linguagem natural integrado com Áudio e Câmera */}
@@ -211,84 +245,92 @@ export function SmartInput() {
         <input
           style={si.naturalInput}
           value={textoLivre}
-          onChange={e => setTextoLivre(e.target.value)}
+          onChange={e => {
+            setTextoLivre(e.target.value);
+            if (mecanismoOrigem === "audio") setMecanismoOrigem("manual");
+          }}
           onKeyDown={e => e.key === "Enter" && interpretar()}
           placeholder='Fale ou escreva. Ex: "Gastei 80 reais no mercado hoje"'
+          disabled={processando}
         />
-        <AudioCapture onTexto={t => { setTextoLivre(t); }} />
-        <FotoUpload onDados={d => { preencherComDados(d); }} />
-        <button onClick={interpretar} style={si.iaBtn} disabled={processando}>
-          {processando ? "⏳" : "✨ Interpretar"}
+        <AudioCapture onTexto={t => { setTextoLivre(t); setMecanismoOrigem("audio"); }} />
+        <FotoUpload onDados={handleFotoDados} />
+        <button onClick={interpretar} style={si.iaBtn} disabled={processando || !textoLivre.trim()}>
+          {processando ? "Processando... ⏳" : "✨ Interpretar"}
         </button>
       </div>
-      <p style={si.hint}>Use o microfone 🎙, foto 📷 ou escreva à mão para preencher com a IA.</p>
+      <p style={si.hint}>Escreva ou use o microfone 🎙 / foto 📷. A transação vai direto para o extrato abaixo para sua revisão!</p>
 
-      {/* Formulário */}
-      <div style={si.formGrid}>
-        <div style={si.field}>
-          <label style={si.label}>Tipo</label>
-          <div style={{ display: "flex", gap: 6 }}>
-            {(["despesa", "receita"] as const).map(t => (
-              <button key={t} onClick={() => setForm(p => ({ ...p, tipo: t, categoria: t === "despesa" ? "Alimentação" : "Salário" }))}
-                style={{
-                  flex: 1, padding: "7px 0", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer",
-                  background: form.tipo === t ? (t === "receita" ? "#22C55E22" : "#EF444422") : "var(--bg-hover)",
-                  color: form.tipo === t ? (t === "receita" ? "#22C55E" : "#EF4444") : "var(--text-dim)",
-                  border: `1px solid ${form.tipo === t ? (t === "receita" ? "#22C55E44" : "#EF444444") : "var(--border-light)"}`,
-                }}>
-                {t === "receita" ? "💰 Receita" : "💸 Despesa"}
-              </button>
-            ))}
+      {/* Formulário Manual Opcional */}
+      {mostrarFormManual && (
+        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+          <div style={si.formGrid}>
+            <div style={si.field}>
+              <label style={si.label}>Tipo</label>
+              <div style={{ display: "flex", gap: 6 }}>
+                {(["despesa", "receita"] as const).map(t => (
+                  <button key={t} onClick={() => setForm(p => ({ ...p, tipo: t, categoria: t === "despesa" ? "Alimentação" : "Salário" }))}
+                    style={{
+                      flex: 1, padding: "7px 0", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                      background: form.tipo === t ? (t === "receita" ? "#22C55E22" : "#EF444422") : "var(--bg-hover)",
+                      color: form.tipo === t ? (t === "receita" ? "#22C55E" : "#EF4444") : "var(--text-dim)",
+                      border: `1px solid ${form.tipo === t ? (t === "receita" ? "#22C55E44" : "#EF444444") : "var(--border-light)"}`,
+                    }}>
+                    {t === "receita" ? "💰 Receita" : "💸 Despesa"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ ...si.field, gridColumn: "1/-1" }}>
+              <label style={si.label}>Descrição</label>
+              <input style={si.input} value={form.descricao ?? ""} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} placeholder="Ex: Compras no Extra" />
+            </div>
+
+            <div style={si.field}>
+              <label style={si.label}>Valor (R$)</label>
+              <input style={si.input} type="number" value={form.valor || ""} onChange={e => setForm(p => ({ ...p, valor: parseFloat(e.target.value) }))} placeholder="0,00" />
+            </div>
+
+            <div style={si.field}>
+              <label style={si.label}>Data</label>
+              <input style={si.input} type="date" value={form.data ?? ""} onChange={e => setForm(p => ({ ...p, data: e.target.value }))} />
+            </div>
+
+            <div style={si.field}>
+              <label style={si.label}>Categoria</label>
+              <select style={si.input} value={form.categoria ?? ""} onChange={e => setForm(p => ({ ...p, categoria: e.target.value }))}>
+                {cats.map(c => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+
+            <div style={si.field}>
+              <label style={si.label}>Quem pagou</label>
+              <select style={si.input} value={form.membro ?? ""} onChange={e => setForm(p => ({ ...p, membro: e.target.value }))}>
+                {MEMBROS.map(m => <option key={m}>{m}</option>)}
+              </select>
+            </div>
+
+            {cartoes.length > 0 && (
+              <div style={{ ...si.field, gridColumn: "1/-1" }}>
+                <label style={si.label}>Cartão (opcional)</label>
+                <select style={si.input} value={form.cartaoId ?? ""} onChange={e => setForm(p => ({ ...p, cartaoId: e.target.value || undefined }))}>
+                  <option value="">Débito / Dinheiro</option>
+                  {cartoes.map(c => <option key={c.id} value={c.id}>{c.nome} ({c.titular})</option>)}
+                </select>
+              </div>
+            )}
+          </div>
+
+          <div style={si.footer}>
+            <div style={si.originTag}>
+              origem: <strong>manual</strong>
+            </div>
+            <button onClick={() => setMostrarFormManual(false)} style={si.cancelBtn}>Cancelar</button>
+            <button onClick={salvar} style={si.saveBtn}>Registrar</button>
           </div>
         </div>
-
-        <div style={{ ...si.field, gridColumn: "1/-1" }}>
-          <label style={si.label}>Descrição</label>
-          <input style={si.input} value={form.descricao ?? ""} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} placeholder="Ex: Compras no Extra" />
-        </div>
-
-        <div style={si.field}>
-          <label style={si.label}>Valor (R$)</label>
-          <input style={si.input} type="number" value={form.valor || ""} onChange={e => setForm(p => ({ ...p, valor: parseFloat(e.target.value) }))} placeholder="0,00" />
-        </div>
-
-        <div style={si.field}>
-          <label style={si.label}>Data</label>
-          <input style={si.input} type="date" value={form.data ?? ""} onChange={e => setForm(p => ({ ...p, data: e.target.value }))} />
-        </div>
-
-        <div style={si.field}>
-          <label style={si.label}>Categoria</label>
-          <select style={si.input} value={form.categoria ?? ""} onChange={e => setForm(p => ({ ...p, categoria: e.target.value }))}>
-            {cats.map(c => <option key={c}>{c}</option>)}
-          </select>
-        </div>
-
-        <div style={si.field}>
-          <label style={si.label}>Quem pagou</label>
-          <select style={si.input} value={form.membro ?? ""} onChange={e => setForm(p => ({ ...p, membro: e.target.value }))}>
-            {MEMBROS.map(m => <option key={m}>{m}</option>)}
-          </select>
-        </div>
-
-        {cartoes.length > 0 && (
-          <div style={{ ...si.field, gridColumn: "1/-1" }}>
-            <label style={si.label}>Cartão (opcional)</label>
-            <select style={si.input} value={form.cartaoId ?? ""} onChange={e => setForm(p => ({ ...p, cartaoId: e.target.value || undefined }))}>
-              <option value="">Débito / Dinheiro</option>
-              {cartoes.map(c => <option key={c.id} value={c.id}>{c.nome} ({c.titular})</option>)}
-            </select>
-          </div>
-        )}
-      </div>
-
-      <div style={si.footer}>
-        <div style={si.originTag}>
-          origem: <strong>{form.origem === "audio" ? "🎙 áudio" : form.origem === "foto" ? "📷 foto" : "✏️ manual"}</strong>
-        </div>
-        <button onClick={() => setAberto(false)} style={si.cancelBtn}>Cancelar</button>
-        <button onClick={salvar} style={si.saveBtn}>Registrar</button>
-      </div>
+      )}
     </div>
   );
 }

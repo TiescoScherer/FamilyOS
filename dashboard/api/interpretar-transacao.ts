@@ -38,7 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       systemInstruction: `Você é um assistente financeiro familiar altamente inteligente e perspicaz. 
 Sua tarefa é analisar uma frase ou áudio transcrito (que pode conter gírias, erros de fala, linguagem coloquial e conversas indiretas) e extrair os detalhes financeiros no formato estruturado JSON.
 

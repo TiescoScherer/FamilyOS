@@ -3,10 +3,10 @@ import type { CreditCard, BudgetCategory, Transacao, ContaFixa } from "@/types/f
 import {
   fetchFinancials,
   addFinancial,
+  confirmarTransacao as apiConfirmarTransacao,
   deleteFinancial,
   fetchFixedBills,
   addFixedBill,
-  toggleFixedBill,
   deleteFixedBill,
   fetchCreditCards,
   addCreditCard,
@@ -26,10 +26,11 @@ interface FinancialStore {
   removeCartao: (id: string) => Promise<void>;
 
   addTransacao: (t: Omit<Transacao, "id">) => Promise<void>;
+  confirmarTransacao: (id: string) => Promise<void>;
   removeTransacao: (id: string) => Promise<void>;
 
   addContaFixa: (c: Omit<ContaFixa, "id">) => Promise<void>;
-  toggleContaFixa: (id: string) => Promise<void>;
+  toggleContaFixa: (id: string, mesReferencia?: string) => Promise<void>;
   removeContaFixa: (id: string) => Promise<void>;
 
   updateBudget: (b: BudgetCategory) => void;
@@ -119,21 +120,49 @@ export const useFinancialStore = create<FinancialStore>((set, get) => ({
         data: salva.data,
         membro: t.membro,
         cartaoId: t.cartaoId,
-        origem: t.origem || "manual"
+        origem: t.origem || "manual",
+        confirmada: t.confirmada !== false
       };
 
       set((s) => {
-        const budgets = s.budgets.map((b) =>
-          transacaoCompleta.tipo === "despesa" && b.nome === transacaoCompleta.categoria
-            ? { ...b, gasto: b.gasto + transacaoCompleta.valor }
-            : b
-        );
-        const cartoes = transacaoCompleta.cartaoId
+        // Apenas soma no orçamento se a transação estiver confirmada!
+        const budgets = transacaoCompleta.confirmada
+          ? s.budgets.map((b) =>
+              transacaoCompleta.tipo === "despesa" && b.nome === transacaoCompleta.categoria
+                ? { ...b, gasto: b.gasto + transacaoCompleta.valor }
+                : b
+            )
+          : s.budgets;
+        const cartoes = transacaoCompleta.confirmada && transacaoCompleta.cartaoId
           ? s.cartoes.map((c) => c.id === transacaoCompleta.cartaoId ? { ...c, gastoMes: c.gastoMes + transacaoCompleta.valor } : c)
           : s.cartoes;
         return { transacoes: [transacaoCompleta, ...s.transacoes], budgets, cartoes };
       });
     }
+  },
+
+  confirmarTransacao: async (id) => {
+    await apiConfirmarTransacao(id);
+    set((s) => {
+      const t = s.transacoes.find((x) => x.id === id);
+      if (!t) return {};
+
+      // Ao confirmar a transação, agora somamos o valor dela no orçamento e no cartão!
+      const budgets = s.budgets.map((b) =>
+        t.tipo === "despesa" && b.nome === t.categoria
+          ? { ...b, gasto: b.gasto + t.valor }
+          : b
+      );
+      const cartoes = t.cartaoId
+        ? s.cartoes.map((c) => c.id === t.cartaoId ? { ...c, gastoMes: c.gastoMes + t.valor } : c)
+        : s.cartoes;
+
+      return {
+        transacoes: s.transacoes.map((x) => x.id === id ? { ...x, confirmada: true } : x),
+        budgets,
+        cartoes
+      };
+    });
   },
 
   removeTransacao: async (id) => {
@@ -143,12 +172,15 @@ export const useFinancialStore = create<FinancialStore>((set, get) => ({
       const transacoes = s.transacoes.filter((x) => x.id !== id);
       if (!t) return { transacoes };
 
-      const budgets = s.budgets.map((b) =>
-        t.tipo === "despesa" && b.nome === t.categoria
-          ? { ...b, gasto: Math.max(0, b.gasto - t.valor) }
-          : b
-      );
-      const cartoes = t.cartaoId
+      // Apenas deduz do orçamento/cartão se a transação deletada estava confirmada!
+      const budgets = t.confirmada
+        ? s.budgets.map((b) =>
+            t.tipo === "despesa" && b.nome === t.categoria
+              ? { ...b, gasto: Math.max(0, b.gasto - t.valor) }
+              : b
+          )
+        : s.budgets;
+      const cartoes = t.confirmada && t.cartaoId
         ? s.cartoes.map((c) => c.id === t.cartaoId ? { ...c, gastoMes: Math.max(0, c.gastoMes - t.valor) } : c)
         : s.cartoes;
 
@@ -163,14 +195,34 @@ export const useFinancialStore = create<FinancialStore>((set, get) => ({
     }
   },
 
-  toggleContaFixa: async (id) => {
+  toggleContaFixa: async (id, mesReferencia) => {
     const c = get().contasFixas.find((x) => x.id === id);
-    if (c) {
-      const novaPaga = !c.paga;
-      await toggleFixedBill(id, novaPaga);
-      set((s) => ({
-        contasFixas: s.contasFixas.map((x) => x.id === id ? { ...x, paga: novaPaga } : x)
-      }));
+    if (!c) return;
+
+    const mesAtual = mesReferencia || new Date().toISOString().slice(0, 7);
+    const transacaoExistente = get().transacoes.find(t => 
+      t.confirmada &&
+      t.tipo === "despesa" &&
+      t.data.startsWith(mesAtual) &&
+      (t.descricao.toLowerCase().includes(c.nome.toLowerCase()) || c.nome.toLowerCase().includes(t.descricao.toLowerCase()))
+    );
+
+    if (transacaoExistente) {
+      await get().removeTransacao(transacaoExistente.id);
+    } else {
+      const diaStr = c.vencimento.toString().padStart(2, "0");
+      const dataTransacao = `${mesAtual}-${diaStr}`;
+      
+      await get().addTransacao({
+        tipo: "despesa",
+        descricao: c.nome,
+        valor: c.valor,
+        categoria: c.categoria,
+        data: dataTransacao,
+        membro: "Família",
+        origem: "manual",
+        confirmada: true
+      });
     }
   },
 

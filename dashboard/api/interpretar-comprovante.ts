@@ -38,7 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       systemInstruction: `Você é um leitor de comprovantes e recibos. Analise a imagem e extraia os dados da transação.
 Se houver múltiplos itens, some tudo e retorne o total como uma despesa de Alimentação. Use a data de hoje se não for mencionada: ${new Date().toISOString().slice(0, 10)}.
 ${SCHEMA_TRANSACAO}`,

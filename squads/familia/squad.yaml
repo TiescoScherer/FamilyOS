@@ -1,0 +1,6 @@
+name: "familia"
+description: "Gestor inteligente de rotinas, saúde, finanças e compromissos da família Scherer."
+pipeline:
+  - step: 1
+    agent: "Especialista da Família Scherer"
+    action: "Analisar as perguntas do usuário, consultar o arquivo de perfil familiar em _opensquad/_memory/family_profile.md e trazer as respostas e resumos organizados sobre a rotina da família."
