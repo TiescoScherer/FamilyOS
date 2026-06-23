@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useFamilyStore } from "@/store/useFamilyStore";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 
 export function HealthPage() {
   const members = useFamilyStore((s) => s.members);
   const medications = useFamilyStore((s) => s.medications);
   const addRemedio = useFamilyStore((s) => s.addRemedio);
+  const isMobile = useIsMobile();
 
   const [showModal, setShowModal] = useState(false);
   const [novoMed, setNovoMed] = useState({
@@ -49,8 +51,8 @@ export function HealthPage() {
 
 
   return (
-    <div style={hp.page}>
-      <div style={hp.header}>
+    <div style={{ ...hp.page, padding: isMobile ? "16px" : "28px 32px" }}>
+      <div style={{ ...hp.header, flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-start" : "flex-start", gap: isMobile ? 12 : 0 }}>
         <div>
           <h1 style={hp.title}>Saúde & Bem-estar</h1>
           <p style={hp.desc}>Controle de rotinas médicas, vacinação e histórico de saúde das crianças</p>
@@ -60,7 +62,7 @@ export function HealthPage() {
         </button>
       </div>
 
-      <div style={hp.grid}>
+      <div style={{ ...hp.grid, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
         {/* Bloco 1: Rotina diária de Medicamentos */}
         <div style={hp.card}>
           <div style={hp.cardHeader}>

@@ -1,4 +1,5 @@
 import { useFamilyStore } from "@/store/useFamilyStore";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { TimelineWidget } from "./TimelineWidget";
 import { FinancialThermometer } from "./FinancialThermometer";
 import { QuickActions } from "./QuickActions";
@@ -32,6 +33,7 @@ function buildTimeline(medications: ReturnType<typeof useFamilyStore.getState>["
 
 export function FamilyDashboard() {
   const { medications, financials, goals, shopping } = useFamilyStore();
+  const isMobile = useIsMobile();
 
   const receitas = financials
     .filter(f => f.tipo === "receita" && f.data.startsWith(new Date().toISOString().slice(0, 7)))
@@ -46,8 +48,8 @@ export function FamilyDashboard() {
   const urgentes = shopping.filter(s => !s.comprado && s.urgente).length;
 
   return (
-    <div style={styles.root}>
-      <header style={styles.header}>
+    <div style={{ ...styles.root, padding: isMobile ? "16px" : "24px 32px" }}>
+      <header style={{ ...styles.header, flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-start" : "center", gap: isMobile ? 10 : 0 }}>
         <div>
           <h1 style={styles.headerTitle}>Family OS</h1>
           <p style={styles.headerSub}>Centro de Comando — {new Date().toLocaleDateString("pt-BR")}</p>
@@ -59,7 +61,7 @@ export function FamilyDashboard() {
         )}
       </header>
 
-      <div style={styles.grid}>
+      <div style={{ ...styles.grid, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
         <div style={styles.colLeft}>
           <TimelineWidget events={timelineEvents} />
           <QuickActions
