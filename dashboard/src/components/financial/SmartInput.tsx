@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useFinancialStore } from "@/store/useFinancialStore";
 import type { Transacao } from "@/types/financial";
 
@@ -40,6 +40,20 @@ function AudioCapture({ onTexto }: { onTexto: (t: string) => void }) {
   const [gravando, setGravando] = useState(false);
   const [status, setStatus] = useState<"idle" | "gravando" | "processando">("idle");
   const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.onstart = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.onresult = null;
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
+      }
+    };
+  }, []);
 
   const iniciar = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -95,8 +109,9 @@ function AudioCapture({ onTexto }: { onTexto: (t: string) => void }) {
         color: gravando ? "#EF4444" : "#6C63FF",
         animation: gravando ? "pulse 1s infinite" : "none",
       }}
+      title={gravando ? "Parar gravação" : "Gravar áudio com a voz"}
     >
-      {status === "processando" ? "⏳" : gravando ? "⏹ Parar" : "🎙 Falar"}
+      {status === "processando" ? "⏳" : gravando ? "⏹" : "🎙"}
     </button>
   );
 }
@@ -123,8 +138,10 @@ function FotoUpload({ onDados }: { onDados: (d: Partial<Transacao>) => void }) {
       <input ref={inputRef} type="file" accept="image/*" capture="environment"
         style={{ display: "none" }} onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
       <button onClick={() => inputRef.current?.click()}
-        style={{ ...ab.btn, background: "#F59E0B22", border: "1px solid #F59E0B55", color: "#F59E0B" }}>
-        {status === "lendo" ? "⏳ Lendo..." : "📷 Foto"}
+        style={{ ...ab.btn, background: "#F59E0B22", border: "1px solid #F59E0B55", color: "#F59E0B" }}
+        title="Tirar foto do comprovante ou carregar imagem"
+      >
+        {status === "lendo" ? "⏳" : "📷"}
       </button>
     </>
   );
@@ -178,8 +195,6 @@ export function SmartInput() {
         <button onClick={() => setAberto(true)} style={si.mainBtn}>
           + Nova Transação
         </button>
-        <AudioCapture onTexto={t => { setTextoLivre(t); setAberto(true); }} />
-        <FotoUpload onDados={d => { preencherComDados(d); setAberto(true); }} />
       </div>
     );
   }
@@ -191,20 +206,22 @@ export function SmartInput() {
         <button onClick={() => setAberto(false)} style={si.closeBtn}>✕</button>
       </div>
 
-      {/* Input de linguagem natural */}
+      {/* Input de linguagem natural integrado com Áudio e Câmera */}
       <div style={si.naturalRow}>
         <input
           style={si.naturalInput}
           value={textoLivre}
           onChange={e => setTextoLivre(e.target.value)}
           onKeyDown={e => e.key === "Enter" && interpretar()}
-          placeholder='Ex: "Gastei 80 reais no mercado" ou "Recebi salário de 3000"'
+          placeholder='Fale ou escreva. Ex: "Gastei 80 reais no mercado hoje"'
         />
+        <AudioCapture onTexto={t => { setTextoLivre(t); }} />
+        <FotoUpload onDados={d => { preencherComDados(d); }} />
         <button onClick={interpretar} style={si.iaBtn} disabled={processando}>
           {processando ? "⏳" : "✨ Interpretar"}
         </button>
       </div>
-      <p style={si.hint}>Escreva em linguagem livre ou use o microfone — a IA preenche os campos.</p>
+      <p style={si.hint}>Use o microfone 🎙, foto 📷 ou escreva à mão para preencher com a IA.</p>
 
       {/* Formulário */}
       <div style={si.formGrid}>
@@ -277,7 +294,18 @@ export function SmartInput() {
 }
 
 const ab: Record<string, React.CSSProperties> = {
-  btn: { borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" },
+  btn: {
+    borderRadius: 8,
+    width: 38,
+    height: 38,
+    fontSize: 15,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    flexShrink: 0,
+    border: "none",
+  },
 };
 
 const si: Record<string, React.CSSProperties> = {
@@ -287,9 +315,9 @@ const si: Record<string, React.CSSProperties> = {
   panelHeader: { padding: "16px 20px 12px", display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border)" },
   panelTitle: { fontSize: 15, fontWeight: 700, color: "#fff" },
   closeBtn: { background: "none", border: "none", color: "var(--text-muted)", fontSize: 18, cursor: "pointer" },
-  naturalRow: { display: "flex", gap: 8, padding: "14px 20px 0" },
-  naturalInput: { flex: 1, background: "var(--bg-hover)", border: "1px solid var(--accent)44", borderRadius: 8, padding: "9px 14px", color: "var(--text)", fontSize: 13, outline: "none" },
-  iaBtn: { background: "var(--accent)22", border: "1px solid var(--accent)55", color: "var(--accent)", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" },
+  naturalRow: { display: "flex", gap: 8, padding: "14px 20px 0", alignItems: "center" },
+  naturalInput: { flex: 1, background: "var(--bg-hover)", border: "1px solid var(--border-light)", borderRadius: 8, padding: "9px 14px", color: "var(--text)", fontSize: 13, outline: "none", height: 38 },
+  iaBtn: { background: "var(--accent)22", border: "1px solid var(--accent)55", color: "var(--accent)", borderRadius: 8, padding: "0 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", height: 38, display: "flex", alignItems: "center", justifyContent: "center" },
   hint: { fontSize: 11, color: "var(--text-muted)", padding: "4px 20px 12px" },
   formGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, padding: "0 20px 16px" },
   field: { display: "flex", flexDirection: "column", gap: 5 },
