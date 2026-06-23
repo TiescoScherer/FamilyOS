@@ -80,7 +80,6 @@ function NovoCartaoModal({ onClose }: { onClose: () => void }) {
   const salvar = () => {
     if (!f.nome || !f.limite) return;
     addCartao({
-      id: Date.now().toString(),
       nome: f.nome, bandeira: f.bandeira, titular: f.titular,
       limite: parseFloat(f.limite), diaFechamento: parseInt(f.diaFechamento),
       diaVencimento: parseInt(f.diaVencimento), cor: f.cor, gastoMes: 0,

@@ -31,6 +31,8 @@ interface FinancialStore {
   addContaFixa: (c: Omit<ContaFixa, "id">) => Promise<void>;
   toggleContaFixa: (id: string) => Promise<void>;
   removeContaFixa: (id: string) => Promise<void>;
+
+  updateBudget: (b: BudgetCategory) => void;
 }
 
 const BUDGET_DEFAULTS: BudgetCategory[] = [
@@ -58,13 +60,23 @@ export const useFinancialStore = create<FinancialStore>((set, get) => ({
         fetchCreditCards()
       ]);
 
+      // Carrega limites personalizados do localStorage
+      let customLimits: Record<string, number> = {};
+      try {
+        const stored = localStorage.getItem("familyos_budget_limits");
+        if (stored) customLimits = JSON.parse(stored);
+      } catch (e) {
+        console.error("Erro ao carregar limites do localStorage:", e);
+      }
+
       // Recalcular os gastos de orçamento baseados nas transações despesa do mês atual
       const mesAtual = new Date().toISOString().slice(0, 7);
       const budgets = BUDGET_DEFAULTS.map((b) => {
         const gasto = transacoes
           .filter((t) => t.tipo === "despesa" && t.categoria === b.nome && t.data.startsWith(mesAtual))
           .reduce((sum, t) => sum + t.valor, 0);
-        return { ...b, gasto };
+        const customLimit = customLimits[b.nome];
+        return { ...b, gasto, limite: customLimit !== undefined ? customLimit : b.limite };
       });
 
       // Recalcular gastos dos cartões de crédito
@@ -165,5 +177,22 @@ export const useFinancialStore = create<FinancialStore>((set, get) => ({
   removeContaFixa: async (id) => {
     await deleteFixedBill(id);
     set((s) => ({ contasFixas: s.contasFixas.filter((c) => c.id !== id) }));
+  },
+
+  updateBudget: (b) => {
+    set((s) => {
+      const newBudgets = s.budgets.map((x) => x.id === b.id ? b : x);
+      // Salva os limites personalizados no localStorage
+      const limits = newBudgets.reduce((acc, curr) => {
+        acc[curr.nome] = curr.limite;
+        return acc;
+      }, {} as Record<string, number>);
+      try {
+        localStorage.setItem("familyos_budget_limits", JSON.stringify(limits));
+      } catch (e) {
+        console.error("Erro ao salvar limites no localStorage:", e);
+      }
+      return { budgets: newBudgets };
+    });
   },
 }));

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useFamilyStore } from "@/store/useFamilyStore";
 
 interface MedHoje { nome: string; hora: string; dosagem: string; }
@@ -52,12 +52,7 @@ const EMPTY_MEMBER = (overrides: Partial<Member>): Member => ({
   ...overrides,
 });
 
-const MEMBERS_INIT: Member[] = [
-  EMPTY_MEMBER({ id: "1", nome: "Frantiesco", role: "admin", dataNascimento: "1990-01-01", emoji: "👨", cor: "#6C63FF" }),
-  EMPTY_MEMBER({ id: "2", nome: "Maiara",     role: "admin", dataNascimento: "1992-01-01", emoji: "👩", cor: "#EC4899" }),
-  EMPTY_MEMBER({ id: "3", nome: "Benjamin",   role: "filho", dataNascimento: "2017-01-01", emoji: "👦", cor: "#06B6D4" }),
-  EMPTY_MEMBER({ id: "4", nome: "Dominic",    role: "filho", dataNascimento: "2021-01-01", emoji: "👶", cor: "#22C55E" }),
-];
+
 
 function calcIdade(d: string) {
   const n = new Date(d); const h = new Date();

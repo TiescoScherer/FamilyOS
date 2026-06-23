@@ -6,7 +6,6 @@ import type { TimelineEvent } from "@/types/family";
 
 function buildTimeline(medications: ReturnType<typeof useFamilyStore.getState>["medications"]): TimelineEvent[] {
   const events: TimelineEvent[] = [];
-  const hoje = new Date();
 
   for (const med of medications) {
     if (!med.status_ativo) continue;

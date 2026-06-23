@@ -90,7 +90,7 @@ function NovaContaModal({ onClose }: { onClose: () => void }) {
 export function FinancialPage() {
   const [aba, setAba] = useState<Aba>("visao-geral");
   const [modalConta, setModalConta] = useState(false);
-  const { transacoes, contasFixas, removeTransacao, toggleContaFixa, removeContaFixa, budgets, cartoes } = useFinancialStore();
+  const { transacoes, contasFixas, removeTransacao, toggleContaFixa, removeContaFixa, cartoes } = useFinancialStore();
 
   const mes = new Date().toISOString().slice(0, 7);
   const receitas = transacoes.filter(t => t.tipo === "receita" && t.data.startsWith(mes)).reduce((s, t) => s + t.valor, 0);

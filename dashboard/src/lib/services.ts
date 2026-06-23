@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { FamilyMember, MedicationRoutine, FutureGoal, ShoppingItem } from "@/types/family";
+import type { MedicationRoutine, FutureGoal, ShoppingItem } from "@/types/family";
 import type { Transacao, ContaFixa, CreditCard } from "@/types/financial";
 
 // ── AUXILIAR: Mapear nome de membro para UUID ──
