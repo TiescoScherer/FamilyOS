@@ -138,20 +138,36 @@ ${SCHEMA_TRANSACAO}`,
 
               const model = genAI.getGenerativeModel({
                 model: "gemini-2.5-flash",
-                systemInstruction: `Você é um leitor de comprovantes e recibos. Analise a imagem e extraia os dados da transação.
-Se houver múltiplos itens, some tudo e retorne o total como uma despesa de Alimentação. Use a data de hoje se não for mencionada: ${new Date().toISOString().slice(0, 10)}.
-${SCHEMA_TRANSACAO}`,
+                systemInstruction: `Você é um leitor especialista em recibos, notas fiscais e comprovantes de supermercado.
+Analise a imagem e extraia TODOS os dados da compra.
+Use a data de hoje se não encontrar uma data: ${new Date().toISOString().slice(0, 10)}.
+
+Retorne APENAS um JSON puro (sem markdown) com esta estrutura:
+{
+  "tipo": "despesa",
+  "descricao": "Nome do estabelecimento (ex: Supermercado Extra, Padaria São João)",
+  "valor": total da compra como número,
+  "categoria": "Alimentação",
+  "data": "YYYY-MM-DD",
+  "membro": "Família",
+  "itens": [
+    { "nome": "nome do produto", "quantidade": 1 }
+  ]
+}
+
+Regras:
+- "valor" deve ser o TOTAL da nota (último valor grande)
+- "itens" deve conter TODOS os produtos comprados que aparecerem na nota
+- Para cada item, "quantidade" deve ser o número de unidades compradas
+- Se não conseguir ler os itens, coloque um array vazio em "itens"`,
                 generationConfig: { responseMimeType: "application/json" }
               });
 
-              const parts = [
+              const result = await model.generateContent([
                 { inlineData: { mimeType: "image/jpeg", data: imagem } },
-                { text: "Extraia os dados desta nota fiscal ou comprovante." }
-              ];
-
-              const result = await model.generateContent(parts);
-              const raw = result.response.text();
-              const dados = JSON.parse(raw);
+                { text: "Leia esta nota fiscal ou recibo e extraia todos os dados conforme o formato solicitado." }
+              ]);
+              const dados = JSON.parse(result.response.text());
 
               res.writeHead(200, { "Content-Type": "application/json" });
               res.end(JSON.stringify(dados));

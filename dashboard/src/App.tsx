@@ -7,6 +7,7 @@ import { FamilyPage } from "@/pages/FamilyPage";
 import { FinancialPage } from "@/pages/FinancialPage";
 import { CalendarPage } from "@/pages/CalendarPage";
 import { HealthPage } from "@/pages/HealthPage";
+import { ShoppingPage } from "@/pages/ShoppingPage";
 import { useFamilyStore } from "@/store/useFamilyStore";
 import { useFinancialStore } from "@/store/useFinancialStore";
 
@@ -28,7 +29,7 @@ function PageContent() {
     case "financeiro": return <FinancialPage />;
     case "calendario": return <CalendarPage />;
     case "saude":      return <HealthPage />;
-    case "compras":    return <Placeholder titulo="Lista de Compras" icon="🛒" />;
+    case "compras":    return <ShoppingPage />;
     case "metas":      return <Placeholder titulo="Metas" icon="🎯" />;
     default:           return <FamilyDashboard />;
   }
